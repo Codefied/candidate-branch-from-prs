@@ -8,3 +8,5 @@ git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
 
 gem "graphql", "~> 1.12"
 gem "graphql-client", "~> 0.16.0"
+
+gem "slop", "~> 4.9"

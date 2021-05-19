@@ -15,6 +15,7 @@ GEM
     i18n (1.8.10)
       concurrent-ruby (~> 1.0)
     minitest (5.14.4)
+    slop (4.9.0)
     tzinfo (2.0.4)
       concurrent-ruby (~> 1.0)
     zeitwerk (2.4.2)
@@ -25,6 +26,7 @@ PLATFORMS
 DEPENDENCIES
   graphql (~> 1.12)
   graphql-client (~> 0.16.0)
+  slop (~> 4.9)
 
 BUNDLED WITH
    2.2.16
