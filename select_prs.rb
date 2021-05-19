@@ -23,9 +23,9 @@ module GitHub
     execute: HTTP
   )
 
-  PR_QUERY_TEMPLATE = <<~'GRAPHQL'
+  PR_QUERY_TEMPLATE = <<~GRAPHQL
     {
-      repository(owner: "Codefied", name: "housecall-web") {
+      repository(owner: "Codefied", name: "#{ENV['REPOSITORY']}") {
         pullRequests(first: 100, %s states: OPEN, orderBy: {direction: ASC, field: UPDATED_AT}) {
           pageInfo {
             endCursor
