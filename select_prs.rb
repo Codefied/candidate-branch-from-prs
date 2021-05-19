@@ -2,7 +2,9 @@
 
 require 'graphql/client'
 require 'graphql/client/http'
+require 'logger'
 
+# Module to do our GraphQL queries off of GitHub and PR filtering
 module GitHub
   HTTP = GraphQL::Client::HTTP.new('https://api.github.com/graphql') do
     def headers(_context)
@@ -71,10 +73,9 @@ module GitHub
   FirstQuery = Client.parse(PR_QUERY_TEMPLATE % '')
   NextQuery  = Client.parse("query($cursor: String!) #{PR_QUERY_TEMPLATE % 'after: $cursor,'}")
 
-  def GitHub.pr_filter(graphql_result:, base: 'master', reject_labels: ['hold'], required_labels: ['ready'])
+  def self.pr_filter(graphql_result, base, reject_labels, required_labels)
     filtered_pr_refs = []
     graphql_result.data.repository.pull_requests.edges.each do |pr|
-      # reject any PR that doesn't meet these criteria
       next if pr.node.is_draft?
       next if pr.node.mergeable != 'MERGEABLE'
       next if pr.node.commits.nodes[0].commit.status.state != 'SUCCESS'
@@ -84,11 +85,23 @@ module GitHub
       next if !reject_labels.empty? && (labels & reject_labels != [])
       next if !required_labels.empty? && ((labels & required_labels).sort != required_labels.sort)
 
+      $logger.debug("Appending #{pr.node.head_ref.name}")
       filtered_pr_refs.append(pr.node.head_ref.name)
     end
     filtered_pr_refs
   end
+
+  def self.branches_matching_filter(base: 'master', reject_labels: ['hold'], required_labels: ['ready'])
+    result = GitHub::Client.query(GitHub::FirstQuery)
+    good_prs = GitHub.pr_filter(result, base, reject_labels, required_labels)
+    while result.data.repository.pull_requests.page_info.has_next_page?
+      cursor = result.data.repository.pull_requests.page_info.end_cursor
+      $logger.debug("Next Page: #{cursor}")
+      result = GitHub::Client.query(GitHub::NextQuery, variables: { cursor: cursor })
+      good_prs += GitHub.pr_filter(result, base, reject_labels, required_labels)
+    end
+    good_prs
+  end
 end
 
-# result = GitHub::Client.query(GitHub::FirstQuery)
-# good_prs = GitHub.pr_filter(result)
+$logger = Logger.new(STDOUT)
