@@ -1,0 +1,31 @@
+# action.yml
+name: 'Candidate branches from PRs'
+description: 'Selects candidate branches from a repository\'s open PRs.'
+inputs:
+  base:
+    description: 'target branch of PRs to search for'
+    required: true
+    default: 'master'
+  reject-labels:
+    description: 'A comma-separated list of PR labels to reject.'
+    required: true
+    default: 'hold'
+  require-labels:
+    description: 'A comma-separated list of PR labels to require.'
+    required: true
+    default: 'ready'
+outputs:
+  branches:
+    description: 'A space-separated list of branches whose PR met the above criteria.'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - 'ruby'
+    - 'select_prs.rb'
+    - '-b'
+    - ${{ inputs.base }}
+    - '-n'
+    - ${{ inputs.reject-labels }}
+    - '-y'
+    - ${{ inputs.require-labels }}
