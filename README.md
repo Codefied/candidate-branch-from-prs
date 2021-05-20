@@ -9,8 +9,8 @@ This generates a list of branches who have PRs that pass a number of criteria:
 * Pass the tag filters given in the options
 
 # Environment variables
-`GITHUB_ACCESS_TOKEN` -- Authorization token to allow access.
-`REPOSITORY` -- the name of the repository to check.
+`GITHUB_TOKEN` -- Authorization token to allow access. See also: https://docs.github.com/en/actions/reference/authentication-in-a-workflow
+`GITHUB_REPOSITORY` -- the name of the repository to check; provided (see https://docs.github.com/en/actions/reference/environment-variables)
 
 # Options
 
@@ -27,5 +27,3 @@ This generates a list of branches who have PRs that pass a number of criteria:
 To pass an empty array into `--reject-labels` or `--require-labels`, add `""`. e.g.
 
 `ruby select_prs.rb -y ""` to specify no labels are required.
-
-

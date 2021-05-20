@@ -9,7 +9,7 @@ require 'slop'
 module GitHub
   HTTP = GraphQL::Client::HTTP.new('https://api.github.com/graphql') do
     def headers(_context)
-      raise 'Missing GitHub Access Token' unless (token = ENV['GITHUB_ACCESS_TOKEN'])
+      raise 'Missing GitHub Access Token' unless (token = ENV['GITHUB_TOKEN'])
 
       {
         'Authorization' => "Bearer #{token}"
@@ -24,9 +24,11 @@ module GitHub
     execute: HTTP
   )
 
+  OWNER, REPO = ENV['GITHUB_REPOSITORY'].split('/')
+
   PR_QUERY_TEMPLATE = <<~GRAPHQL
     {
-      repository(owner: "Codefied", name: "#{ENV['REPOSITORY']}") {
+      repository(owner: "#{self::OWNER}", name: "#{self::REPO}") {
         pullRequests(first: 100, %s states: OPEN, orderBy: {direction: ASC, field: UPDATED_AT}) {
           pageInfo {
             endCursor
