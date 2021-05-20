@@ -78,7 +78,7 @@ module GitHub
   FirstQuery = Client.parse(PR_QUERY_TEMPLATE % '')
   NextQuery  = Client.parse("query($cursor: String!) #{PR_QUERY_TEMPLATE % 'after: $cursor,'}")
 
-  def self.pr_filter(graphql_result, base, reject_labels, required_labels)
+  def self.pr_filter(graphql_result, base, reject_labels, require_labels)
     filtered_pr_refs = []
     graphql_result.data.repository.pull_requests.edges.each do |pr|
       $logger.debug("Investigating #{pr.node.title} by #{pr.node.author.login}")
@@ -90,7 +90,7 @@ module GitHub
 
       labels = pr.node.labels.edges.map { |e| e.node.name }.compact
       next if !reject_labels.empty? && (labels & reject_labels != [])
-      next if !required_labels.empty? && ((labels & required_labels).sort != required_labels.sort)
+      next if !require_labels.empty? && ((labels & require_labels).sort != require_labels.sort)
 
       $logger.info("Appending #{pr.node.head_ref.name}")
       filtered_pr_refs.append(pr.node.head_ref.name)
@@ -98,14 +98,14 @@ module GitHub
     filtered_pr_refs
   end
 
-  def self.branches_matching_filter(base, reject_labels, required_labels)
+  def self.branches_matching_filter(base, reject_labels, require_labels)
     result = GitHub::Client.query(GitHub::FirstQuery)
-    good_prs = GitHub.pr_filter(result, base, reject_labels, required_labels)
+    good_prs = GitHub.pr_filter(result, base, reject_labels, require_labels)
     while result.data.repository.pull_requests.page_info.has_next_page?
       cursor = result.data.repository.pull_requests.page_info.end_cursor
       $logger.debug("Next Page: #{cursor}")
       result = GitHub::Client.query(GitHub::NextQuery, variables: { cursor: cursor })
-      good_prs += GitHub.pr_filter(result, base, reject_labels, required_labels)
+      good_prs += GitHub.pr_filter(result, base, reject_labels, require_labels)
     end
     good_prs
   end
@@ -113,8 +113,8 @@ end
 
 opts = Slop.parse do |o|
   o.string '-b', '--base', 'Base branch PRs are compared against; default is master', default: 'master'
-  o.array '-y', '--required-labels', 'Labels required to be in the PR. (e.g. ready)', default: []
-  o.array '-n', '--reject-labels', 'Labels that rule out a PR (e.g. hold)', default: []
+  o.array '-y', '--require-labels', 'Labels required to be in the PR. (default [\'ready\'])', default: ['ready']
+  o.array '-n', '--reject-labels', 'Labels that rule out a PR (default [\'hold\'])', default: ['hold']
   o.on '-h', '--help' do
     puts o
     exit
@@ -131,4 +131,4 @@ $logger.level = if opts.debug?
                 else
                   Logger::WARN
                 end
-puts GitHub.branches_matching_filter(opts[:base], opts[:reject_labels], opts[:required_labels])
+puts GitHub.branches_matching_filter(opts[:base], opts[:reject_labels], opts[:require_labels])

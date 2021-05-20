@@ -1,19 +1,31 @@
-# GitHub Action: Candidate Branch from PRs
+# GitHub Action: Candidate Branch(es) from PRs
 
-This generates a new branch from a list of the repository's PRs.
-
-PRs must:
+This generates a list of branches who have PRs that pass a number of criteria:
+* Open PRs
 * Pass all available checks
-* Not be "Draft"
+* Is "MERGEABLE" (doesn't need to be updated with the base)
+* Cannot be "Draft"
+* Are against the specified base bratch
+* Pass the tag filters given in the options
 
-A branch is created, and then a PR is generated from that branch. It is not auto-deployed to QA, yet.
+# Environment variables
+`GITHUB_ACCESS_TOKEN` -- Authorization token to allow access.
+`REPOSITORY` -- the name of the repository to check.
 
 # Options
 
-| Option        | Required? | Description                                                           |
-|---------------|-----------|-----------------------------------------------------------------------|
-| branch-prefix | Y         | Prefix for the branch name to be created                              |
-| pr-base       | N         | target branch of PRs to search for (if not specified, `main` is used. |
-| ignore-tags   | N         | Ignore any PRs with this array of tags (e.g. `hold`, `dependency`)    |
-| require-tags  | N         | Require PRs to have these tags (e.g. `ready`)                         |
+| Option               | Required? | Description                                             | default  |
+|----------------------|-----------|---------------------------------------------------------|----------|
+| -b, --base           | N         | target branch of PRs to search for                      | `master` |
+| -n, --reject-labels  | N         | Ignore any PRs with this array of tags; use "" to clear | `hold`   |
+| -y, --require-labels | N         | Require PRs to have these tags                          | `ready`  |
+| -d, --debug          | N         | Debug log level                                         | Warn     |
+| -v, --verbose        | N         | Info log level                                          | Warn     |
+
+## Note on options
+
+To pass an empty array into `--reject-labels` or `--require-labels`, add `""`. e.g.
+
+`ruby select_prs.rb -y ""` to specify no labels are required.
+
 
