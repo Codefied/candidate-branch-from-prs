@@ -18,7 +18,9 @@ jobs:
           reject-labels: ''
           require-labels: 'test'
           additional-args: '-d'
-      # Use the output from the `hello` step
+      # Note -- this doesn't actually work unless you re-run it,
+      # because this very test is also running on the PRs, and will
+      # get rejected for that reason. So Meta!
       - name: This should list test-branch-2 and test-branch-3
         env:
           mess: ${{ steps.candidates.outputs.branches }}
