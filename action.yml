@@ -1,6 +1,6 @@
 # action.yml
 name: 'Candidate branches from PRs'
-description: 'Selects candidate branches from a repository\'s open PRs.'
+description: "Selects candidate branches from a repository's open PRs."
 inputs:
   base:
     description: 'target branch of PRs to search for'
