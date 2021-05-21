@@ -133,4 +133,5 @@ $logger.level = if opts.debug?
                 else
                   Logger::WARN
                 end
-puts GitHub.branches_matching_filter(opts[:base], opts[:reject_labels], opts[:require_labels]).join(' ')
+branches = GitHub.branches_matching_filter(opts[:base], opts[:reject_labels], opts[:require_labels]).join(' ')
+puts "::set-output name=branches::#{branches}"
