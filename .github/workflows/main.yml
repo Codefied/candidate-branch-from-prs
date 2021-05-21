@@ -3,7 +3,7 @@ on: [push]
 jobs:
   test-job:
     runs-on: ubuntu-latest
-    name: List all branches that are not on hold, no required label
+    name: List all test branches.
     steps:
       # To use this repository's private action,
       # you must check out the repository
