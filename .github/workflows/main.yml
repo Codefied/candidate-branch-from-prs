@@ -13,7 +13,7 @@ jobs:
         uses: ./ # Uses an action in the root directory
         id: candidates
         env:
-          GITHUB_TOKEN: $GITHUB_TOKEN
+          GITHUB_TOKEN: ${{ github.token }}
       # Use the output from the `hello` step
       - name: print the list of branches, in order.
         env:
