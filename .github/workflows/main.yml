@@ -19,7 +19,7 @@ jobs:
           require-labels: 'test'
           additional-args: '-d'
       # Use the output from the `hello` step
-      - name: print the list of branches, in order.
+      - name: This should list test-branch-2 and test-branch-3
         env:
           mess: ${{ steps.candidates.outputs.branches }}
         run: |
