@@ -86,8 +86,7 @@ module GitHub
       $logger.debug("Investigating #{pr.node.title} by #{pr.node.author.login}")
       next if pr.node.is_draft?
       next if pr.node.mergeable != 'MERGEABLE'
-      next if pr.node.commits.nodes[0].commit.status.nil?
-      next if pr.node.commits.nodes[0].commit.status.state != 'SUCCESS'
+      next if !pr.node.commits.nodes[0].commit.status.nil? && pr.node.commits.nodes[0].commit.status.state != 'SUCCESS'
       next if pr.node.base_ref_name != base
 
       labels = pr.node.labels.edges.map { |e| e.node.name }.compact
