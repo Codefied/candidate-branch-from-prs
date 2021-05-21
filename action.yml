@@ -27,3 +27,4 @@ runs:
     - ${{ inputs.reject-labels }}
     - '-y'
     - ${{ inputs.require-labels }}
+    - '-d'
