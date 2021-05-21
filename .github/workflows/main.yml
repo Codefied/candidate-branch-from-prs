@@ -19,9 +19,11 @@ jobs:
           require-labels: ''
       # Use the output from the `hello` step
       - name: print the list of branches, in order.
+        env:
+          mess: ${{ steps.branchez.outputs.branches }}
         run: |
           i=0
-          for bla in ${{ steps.branchez.outputs.branches }} ; do
+          for bla in $mess ; do
             i=$((i+1))
             echo "${i}. ${bla}"
           done
