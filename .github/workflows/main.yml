@@ -1,0 +1,24 @@
+on: [push]
+
+jobs:
+  test-job:
+    runs-on: ubuntu-latest
+    name: Test this with default options
+    steps:
+      # To use this repository's private action,
+      # you must check out the repository
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: PR test action step
+        uses: ./ # Uses an action in the root directory
+        id: branchez
+        with:
+          require-labels: ''
+      # Use the output from the `hello` step
+      - name: print the list of branches, in order.
+        run: |
+          i=0
+          for bla in ${{ steps.branchez.outputs.branches }} ; do
+            i=$((i+1))
+            echo "${i}. ${bla}"
+          done
