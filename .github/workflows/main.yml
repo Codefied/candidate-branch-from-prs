@@ -14,6 +14,10 @@ jobs:
         id: candidates
         env:
           GITHUB_TOKEN: ${{ github.token }}
+        with:
+          reject-labels: ''
+          require-labels: 'test'
+          additional-args: '-d'
       # Use the output from the `hello` step
       - name: print the list of branches, in order.
         env:
