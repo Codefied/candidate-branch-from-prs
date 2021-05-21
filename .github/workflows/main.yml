@@ -11,14 +11,14 @@ jobs:
         uses: actions/checkout@v2
       - name: PR test action step
         uses: ./ # Uses an action in the root directory
-        id: branchez
+        id: candidates
         env:
           GITHUB_REPOSITORY: 'Codefied/housecall-web'
           GITHUB_TOKEN: ${{ secrets.JBRS_SECRET_KEY }}
       # Use the output from the `hello` step
       - name: print the list of branches, in order.
         env:
-          mess: ${{ steps.branchez.outputs.branches }}
+          mess: ${{ steps.candidates.outputs.branches }}
         run: |
           i=0
           for bla in $mess ; do
