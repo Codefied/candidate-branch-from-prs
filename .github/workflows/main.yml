@@ -15,8 +15,6 @@ jobs:
         env:
           GITHUB_REPOSITORY: 'Codefied/housecall-web'
           GITHUB_TOKEN: ${{ secrets.JBRS_SECRET_KEY }}
-        with:
-          require-labels: ''
       # Use the output from the `hello` step
       - name: print the list of branches, in order.
         env:
