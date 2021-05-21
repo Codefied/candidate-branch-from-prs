@@ -12,6 +12,9 @@ jobs:
       - name: PR test action step
         uses: ./ # Uses an action in the root directory
         id: branchez
+        env:
+          GITHUB_REPOSITORY: housecall-web
+          GITHUB_TOKEN: $GITHUB_TOKEN
         with:
           require-labels: ''
       # Use the output from the `hello` step
