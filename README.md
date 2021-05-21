@@ -8,8 +8,12 @@ This generates a list of branches who have PRs that pass a number of criteria:
 * Are against the specified base bratch
 * Pass the tag filters given in the options
 
+**See .github/workflows/main.yml for an example invocation**
+
 # Environment variables
+
 `GITHUB_TOKEN` -- Authorization token to allow access. See also: https://docs.github.com/en/actions/reference/authentication-in-a-workflow
+
 `GITHUB_REPOSITORY` -- the name of the repository to check; provided (see https://docs.github.com/en/actions/reference/environment-variables)
 
 # Options
