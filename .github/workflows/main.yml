@@ -13,8 +13,8 @@ jobs:
         uses: ./ # Uses an action in the root directory
         id: branchez
         env:
-          GITHUB_REPOSITORY: Codefied/housecall-web
-          GITHUB_TOKEN: $GITHUB_TOKEN
+          GITHUB_REPOSITORY: 'Codefied/housecall-web'
+          GITHUB_TOKEN: ${{ secrets.JBRS_SECRET_KEY }}
         with:
           require-labels: ''
       # Use the output from the `hello` step
