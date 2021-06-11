@@ -97,26 +97,93 @@ module GitHub
     }
   GRAPHQL
 
+  @@logger = Logger.new($stdout)
+
+  def self.log_level(level)
+    @@logger.level = level
+  end
+  
+  def self.logger
+    @@logger
+  end
+
   FirstQuery = Client.parse(PR_QUERY_TEMPLATE % '')
   NextQuery  = Client.parse("query($cursor: String!) #{PR_QUERY_TEMPLATE % 'after: $cursor,'}")
 
   def self.pr_filter(graphql_result, base, reject_labels, require_labels)
     filtered_pr_refs = []
     graphql_result.data.repository.pull_requests.edges.each do |pr|
-      $logger.debug("Investigating #{pr.node.title} by #{pr.node.author.login}")
-      next if pr.node.is_draft?
-      next if pr.node.mergeable != 'MERGEABLE'
-      next if !pr.node.commits.nodes[0].commit.status.nil? && pr.node.commits.nodes[0].commit.status.state != 'SUCCESS'
-      next if pr.node.base_ref_name != base
+      @@logger.debug("Investigating #{pr.node.title} by #{pr.node.author.login}")
+      next if     GitHub.pr_is_draft?(pr)
+      next unless GitHub.pr_is_mergeable?(pr)
+      next unless GitHub.pr_passed_tests?(pr)
+      next unless GitHub.pr_against_base?(pr, base)
 
       labels = pr.node.labels.edges.map { |e| e.node.name }.compact
-      next if !reject_labels.empty? && (labels & reject_labels != [])
-      next if !require_labels.empty? && ((labels & require_labels).sort != require_labels.sort)
+      next if     GitHub.pr_has_rejected_labels?(pr, labels, reject_labels)
+      next unless GitHub.pr_has_all_required_labels?(pr, labels, require_labels)
 
-      $logger.info("Appending #{pr.node.head_ref.name}")
+      @@logger.info("Appending #{pr.node.head_ref.name}")
       filtered_pr_refs.append(pr.node.head_ref.name)
     end
     filtered_pr_refs
+  end
+
+  def self.pr_is_draft?(pull_request)
+    if pull_request.node.is_draft?
+      @@logger.info("-- Rejecting #{pull_request.node.head_ref.name}: PR is draft.")
+      return true
+    end
+    false
+  end
+
+  def self.pr_is_mergeable?(pull_request)
+    if pull_request.node.mergeable != 'MERGEABLE'
+      @@logger.info("-- Rejecting #{pull_request.node.head_ref.name}: PR merge state is #{pull_request.node.mergeable}, not MERGEABLE.")
+      return false
+    end
+    true
+  end
+
+  def self.pr_passed_tests?(pull_request)
+    if pull_request.node.commits.nodes[0].commit.status.nil?
+      @@logger.debug("++ Accepting #{pull_request.node.head_ref.name} despite lack of commit status")
+      return true
+    end
+    if pull_request.node.commits.nodes[0].commit.status.state != 'SUCCESS'
+      @@logger.info("-- Rejecting #{pull_request.node.head_ref.name}: ")
+      @@logger.info("   commit #{pull_request.node.commits.nodes[0].commit.oid} test state is #{pull_request.node.commits.nodes[0].commit.status.state}")
+      return false
+    end
+    true
+  end
+
+  def self.pr_against_base?(pull_request, base)
+    if pull_request.node.base_ref_name != base
+      @@logger.info("-- Rejecting #{pull_request.node.head_ref.name}: PR's base #{pull_request.node.base_ref_name} is not #{base}")
+      return false
+    end
+    true
+  end
+
+  def self.pr_has_rejected_labels?(pull_request, pr_labels, reject_labels)
+    if !reject_labels.empty? && (pr_labels & reject_labels != [])
+      @@logger.info("-- Rejecting #{pull_request.node.head_ref.name}: has a rejected label")
+      @@logger.info("   PR Labels: #{pr_labels.join(', ')}")
+      @@logger.info("   Reject labels: #{reject_labels.join(', ')}")
+      return true
+    end
+    false
+  end
+
+  def self.pr_has_all_required_labels?(pull_request, pr_labels, require_labels)
+    if !require_labels.empty? && ((pr_labels & require_labels).sort != require_labels.sort)
+      @@logger.info("-- Rejecting #{pull_request.node.head_ref.name}: lacks a required label")
+      @@logger.info("   PR Labels: #{pr_labels.join(', ')}")
+      @@logger.info("   Required labels: #{require_labels.join(', ')}")
+      return false
+    end
+    true
   end
 
   def self.branches_matching_filter(base, reject_labels, require_labels)
@@ -124,7 +191,7 @@ module GitHub
     good_prs = GitHub.pr_filter(result, base, reject_labels, require_labels)
     while result.data.repository.pull_requests.page_info.has_next_page?
       cursor = result.data.repository.pull_requests.page_info.end_cursor
-      $logger.debug("Next Page: #{cursor}")
+      @@logger.debug("Next Page: #{cursor}")
       result = GitHub::Client.query(GitHub::NextQuery, variables: { cursor: cursor })
       good_prs += GitHub.pr_filter(result, base, reject_labels, require_labels)
     end
@@ -144,16 +211,17 @@ opts = Slop.parse do |o|
   o.bool '-v', '--verbose', 'Verbose logging. [INFO]'
 end
 
-$logger = Logger.new($stdout)
-$logger.level = if opts.debug?
-                  Logger::DEBUG
-                elsif opts.verbose?
-                  Logger::INFO
-                else
-                  Logger::WARN
-                end
+GitHub.log_level(
+  if opts.debug?
+    Logger::DEBUG
+  elsif opts.verbose?
+    Logger::INFO
+  else
+    Logger::WARN
+  end
+)
 
-$logger.debug("Github Repository: #{ENV['GITHUB_REPOSITORY']}")
+GitHub.logger.debug("Github Repository: #{ENV['GITHUB_REPOSITORY']}")
 
 branches = GitHub.branches_matching_filter(opts[:base], opts[:reject_labels], opts[:require_labels]).join(' ')
 puts "::set-output name=branches::#{branches}"
