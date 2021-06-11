@@ -139,7 +139,7 @@ module GitHub
 
   def self.pr_is_mergeable?(pull_request)
     if pull_request.node.mergeable != 'MERGEABLE'
-      @@logger.info("-- Rejecting #{pull_request.node.head_ref.name}: PR merge state is is #{pull_request.node.mergeable}, not MERGEABLE.")
+      @@logger.info("-- Rejecting #{pull_request.node.head_ref.name}: PR merge state is #{pull_request.node.mergeable}, not MERGEABLE.")
       return false
     end
     true
