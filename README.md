@@ -23,6 +23,7 @@ This generates a list of branches who have PRs that pass a number of criteria:
 | -b, --base           | N         | target branch of PRs to search for                      | `master` |
 | -n, --reject-labels  | N         | Ignore any PRs with this array of tags; use "" to clear | `hold`   |
 | -y, --require-labels | N         | Require PRs to have these tags                          | `ready`  |
+| -1, --at-least-one-label | N     | At least one of these tags is required                  | `[]`     |
 | -d, --debug          | N         | Debug log level                                         | Warn     |
 | -v, --verbose        | N         | Info log level                                          | Warn     |
 
