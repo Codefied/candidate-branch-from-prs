@@ -110,7 +110,7 @@ module GitHub
   FirstQuery = Client.parse(PR_QUERY_TEMPLATE % '')
   NextQuery  = Client.parse("query($cursor: String!) #{PR_QUERY_TEMPLATE % 'after: $cursor,'}")
 
-  def self.pr_filter(graphql_result, base, reject_labels, require_labels)
+  def self.pr_filter(graphql_result, base, reject_labels, require_labels, at_least_one_label)
     filtered_pr_refs = []
     graphql_result.data.repository.pull_requests.edges.each do |pr|
       @@logger.debug("Investigating #{pr.node.title} by #{pr.node.author.login}")
@@ -122,6 +122,7 @@ module GitHub
       labels = pr.node.labels.edges.map { |e| e.node.name }.compact
       next if     GitHub.pr_has_rejected_labels?(pr, labels, reject_labels)
       next unless GitHub.pr_has_all_required_labels?(pr, labels, require_labels)
+      next unless GitHub.pr_has_at_least_one_label?(pr, labels, at_least_one_label)
 
       @@logger.info("Appending #{pr.node.head_ref.name}")
       filtered_pr_refs.append(pr.node.head_ref.name)
@@ -186,14 +187,24 @@ module GitHub
     true
   end
 
-  def self.branches_matching_filter(base, reject_labels, require_labels)
+  def self.pr_has_at_least_one_label?(pull_request, pr_labels, at_least_one_label)
+    if !at_least_one_label.empty? && (pr_labels & at_least_one_label == [])
+      @@logger.info("-- Rejecting #{pull_request.node.head_ref.name}: lacks at least one label")
+      @@logger.info("   PR Labels: #{pr_labels.join(', ')}")
+      @@logger.info("   At least one label: #{at_least_one_label.join(', ')}")
+      return false
+    end
+    true
+  end
+
+  def self.branches_matching_filter(base, reject_labels, require_labels, at_least_one_label)
     result = GitHub::Client.query(GitHub::FirstQuery)
-    good_prs = GitHub.pr_filter(result, base, reject_labels, require_labels)
+    good_prs = GitHub.pr_filter(result, base, reject_labels, require_labels, at_least_one_label)
     while result.data.repository.pull_requests.page_info.has_next_page?
       cursor = result.data.repository.pull_requests.page_info.end_cursor
       @@logger.debug("Next Page: #{cursor}")
       result = GitHub::Client.query(GitHub::NextQuery, variables: { cursor: cursor })
-      good_prs += GitHub.pr_filter(result, base, reject_labels, require_labels)
+      good_prs += GitHub.pr_filter(result, base, reject_labels, require_labels, at_least_one_label)
     end
     good_prs
   end
@@ -201,8 +212,9 @@ end
 
 opts = Slop.parse do |o|
   o.string '-b', '--base', 'Base branch PRs are compared against; default is master', default: 'master'
-  o.array '-y', '--require-labels', 'Labels required to be in the PR. (default [\'ready\'])', default: ['ready']
+  o.array '-y', '--require-labels', 'ALL of these labels are required to be in the PR. (default [\'ready\'])', default: ['ready']
   o.array '-n', '--reject-labels', 'Labels that rule out a PR (default [\'hold\'])', default: ['hold']
+  o.array '-1', '--at-least-one-label', 'Require at least one of these labels (default [])', default: []
   o.on '-h', '--help' do
     puts o
     exit
@@ -223,5 +235,5 @@ GitHub.log_level(
 
 GitHub.logger.debug("Github Repository: #{ENV['GITHUB_REPOSITORY']}")
 
-branches = GitHub.branches_matching_filter(opts[:base], opts[:reject_labels], opts[:require_labels]).join(' ')
+branches = GitHub.branches_matching_filter(opts[:base], opts[:reject_labels], opts[:require_labels], opts[:at_least_one_label]).join(' ')
 puts "::set-output name=branches::#{branches}"
