@@ -33,6 +33,10 @@ inputs:
     description: 'A comma-separated list of PR labels to require.'
     required: true
     default: 'ready'
+  at-least-one-label:
+    description: 'A comma-separated list of PR labels, at least one of which is required.'
+    required: true
+    default: ''
   additional-args:
     description: 'Additional args e.g. -d or -v'
     required: false
@@ -49,4 +53,6 @@ runs:
     - ${{ inputs.reject-labels }}
     - '-y'
     - ${{ inputs.require-labels }}
+    - '-1'
+    - ${{ inputs.at-least-one-label }}
     - ${{ inputs.additional-args }}
