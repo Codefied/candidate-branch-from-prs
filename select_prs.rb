@@ -244,5 +244,13 @@ GitHub.log_level(
 
 GitHub.logger.debug("Github Repository: #{ENV['GITHUB_REPOSITORY']}")
 
-branches = GitHub.branches_matching_filter(opts).join(' ')
+branches = nil
+loop do
+  GitHub.logger.info("Trying again... Try #{GitHub.tries + 1}") if GitHub.tries.positive?
+  branches = GitHub.branches_matching_filter(opts).join(' ')
+  GitHub.logger.debug("Percent: #{GitHub.percent}; Tries: #{GitHub.tries}")
+  break if (GitHub.tries >= opts[:max_retries]) || (GitHub.percent < opts[:unknown_threshold])
+end
+raise 'Giving up after too many failures' if GitHub.tries >= opts[:max_retries]
+
 puts "::set-output name=branches::#{branches}"
