@@ -249,7 +249,7 @@ opts = Slop.parse do |o|
   o.array '-y', '--require-labels', 'ALL of these labels are required to be in the PR. (default [\'ready\'])', default: ['ready']
   o.array '-n', '--reject-labels', 'Labels that rule out a PR (default [\'hold\'])', default: ['hold']
   o.array '-1', '--at-least-one-label', 'Require at least one of these labels (default [])', default: []
-  o.integer '-u', '--unknown-threshold', 'If the pecentage of UNKNOWN PRs exceed this, retry (default 10)', default: 10
+  o.integer '-u', '--unknown-threshold', 'If the pecentage of UNKNOWN PRs exceed this, retry (default 1)', default: 1
   o.integer '-r', '--retry-delay', 'How long to wait, in seconds, to retry (default 30)', default: 30
   o.integer '-m', '--max-retries', 'How many times to retry before the job failes (deafult 10)', default: 10
   o.on '-h', '--help' do
