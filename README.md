@@ -18,14 +18,18 @@ This generates a list of branches who have PRs that pass a number of criteria:
 
 # Options
 
-| Option               | Required? | Description                                             | default  |
-|----------------------|-----------|---------------------------------------------------------|----------|
-| -b, --base           | N         | target branch of PRs to search for                      | `master` |
-| -n, --reject-labels  | N         | Ignore any PRs with this array of tags; use "" to clear | `hold`   |
-| -y, --require-labels | N         | Require PRs to have these tags                          | `ready`  |
-| -1, --at-least-one-label | N     | At least one of these tags is required                  | `[]`     |
-| -d, --debug          | N         | Debug log level                                         | Warn     |
-| -v, --verbose        | N         | Info log level                                          | Warn     |
+| Required? | Option                   | Description                                                         | default        |
+|-----------|--------------------------|---------------------------------------------------------------------|----------------|
+| N         | -b, --base               | target branch of PRs to search for                                  | `master`       |
+| N         | -n, --reject-labels      | Ignore any PRs with this array of tags; use "" to clear             | `hold`         |
+| N         | -y, --require-labels     | Require PRs to have these tags                                      | `ready`        |
+| N         | -1, --at-least-one-label | At least one of these tags is required                              | `[]`           |
+| N         | -u, --unknown-threshold  | Number expressing a percent of UNKNOWN state PRs to trigger a retry | `1`  [percent] |
+| N         | -r, --retry-delay        | Time in seconds before retrying when UNKNOWN PRs exceed threshold   | `30` [seconds] |
+| N         | -m, --max-retries        | Maximum number of retries before we give up completely              | `10`           |
+| N         | -d, --debug              | Debug log level                                                     | Warn           |
+| N         | -v, --verbose            | Info log level                                                      | Warn           |
+
 
 ## Note on options
 
