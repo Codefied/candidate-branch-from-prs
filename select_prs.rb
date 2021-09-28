@@ -108,9 +108,9 @@ module GitHub
 
   def self.percent
     if @count.zero?
-      0
+      0.0
     else
-      (100 * @unknowns) / @count
+      (100.0 * @unknowns) / @count
     end
   end
 
