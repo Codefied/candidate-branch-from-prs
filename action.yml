@@ -38,7 +38,7 @@ inputs:
     required: true
     default: ''
   additional-args:
-    description: 'Additional args e.g. -d or -v'
+    description: 'Additional args e.g. -d or -v; see README'
     required: false
 outputs:
   branches:

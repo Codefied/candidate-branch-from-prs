@@ -197,9 +197,15 @@ module GitHub
     true
   end
 
-  def self.branches_matching_filter(base, reject_labels, require_labels, at_least_one_label)
+  def self.branches_matching_filter(opts)
     result = GitHub::Client.query(GitHub::FirstQuery)
-    good_prs = GitHub.pr_filter(result, base, reject_labels, require_labels, at_least_one_label)
+    good_prs = GitHub.pr_filter(
+      result,
+      opts[:base],
+      opts[:reject_labels],
+      opts[:require_labels],
+      opts[:at_least_one_label]
+    )
     while result.data.repository.pull_requests.page_info.has_next_page?
       cursor = result.data.repository.pull_requests.page_info.end_cursor
       @@logger.debug("Next Page: #{cursor}")
@@ -215,6 +221,9 @@ opts = Slop.parse do |o|
   o.array '-y', '--require-labels', 'ALL of these labels are required to be in the PR. (default [\'ready\'])', default: ['ready']
   o.array '-n', '--reject-labels', 'Labels that rule out a PR (default [\'hold\'])', default: ['hold']
   o.array '-1', '--at-least-one-label', 'Require at least one of these labels (default [])', default: []
+  o.integer '-u', '--unknown-threshold', 'If the pecentage of UNKNOWN PRs exceed this, retry (default 10)', default: 10
+  o.integer '-r', '--retry-delay', 'How long to wait, in seconds, to retry (default 30)', default: 30
+  o.integer '-m', '--max-retries', 'How many times to retry before the job failes (deafult 10)', default: 10
   o.on '-h', '--help' do
     puts o
     exit
@@ -235,5 +244,5 @@ GitHub.log_level(
 
 GitHub.logger.debug("Github Repository: #{ENV['GITHUB_REPOSITORY']}")
 
-branches = GitHub.branches_matching_filter(opts[:base], opts[:reject_labels], opts[:require_labels], opts[:at_least_one_label]).join(' ')
+branches = GitHub.branches_matching_filter(opts).join(' ')
 puts "::set-output name=branches::#{branches}"
