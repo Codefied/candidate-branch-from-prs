@@ -97,14 +97,29 @@ module GitHub
     }
   GRAPHQL
 
-  @@logger = Logger.new($stdout)
+  @logger = Logger.new($stdout)
+  @count    = 0
+  @unknowns = 0
+  @tries  = 0
+
+  def self.tries
+    @tries
+  end
+
+  def self.percent
+    if @count == 0
+      0
+    else
+      100 * ( @unknowns / @count )
+    end
+  end
 
   def self.log_level(level)
-    @@logger.level = level
+    @logger.level = level
   end
-  
+
   def self.logger
-    @@logger
+    @logger
   end
 
   FirstQuery = Client.parse(PR_QUERY_TEMPLATE % '')
@@ -113,7 +128,7 @@ module GitHub
   def self.pr_filter(graphql_result, base, reject_labels, require_labels, at_least_one_label)
     filtered_pr_refs = []
     graphql_result.data.repository.pull_requests.edges.each do |pr|
-      @@logger.debug("Investigating #{pr.node.title} by #{pr.node.author.login}")
+      @logger.debug("Investigating #{pr.node.title} by #{pr.node.author.login}")
       next if     GitHub.pr_is_draft?(pr)
       next unless GitHub.pr_is_mergeable?(pr)
       next unless GitHub.pr_passed_tests?(pr)
@@ -124,7 +139,7 @@ module GitHub
       next unless GitHub.pr_has_all_required_labels?(pr, labels, require_labels)
       next unless GitHub.pr_has_at_least_one_label?(pr, labels, at_least_one_label)
 
-      @@logger.info("Appending #{pr.node.head_ref.name}")
+      @logger.info("Appending #{pr.node.head_ref.name}")
       filtered_pr_refs.append(pr.node.head_ref.name)
     end
     filtered_pr_refs
@@ -132,15 +147,19 @@ module GitHub
 
   def self.pr_is_draft?(pull_request)
     if pull_request.node.is_draft?
-      @@logger.info("-- Rejecting #{pull_request.node.head_ref.name}: PR is draft.")
+      @logger.info("-- Rejecting #{pull_request.node.head_ref.name}: PR is draft.")
       return true
     end
     false
   end
 
   def self.pr_is_mergeable?(pull_request)
+    @count += 1
+    @logger.debug("Count: #{@count}")
     if pull_request.node.mergeable != 'MERGEABLE'
-      @@logger.info("-- Rejecting #{pull_request.node.head_ref.name}: PR merge state is #{pull_request.node.mergeable}, not MERGEABLE.")
+      @logger.info("-- Rejecting #{pull_request.node.head_ref.name}: PR merge state is #{pull_request.node.mergeable}, not MERGEABLE.")
+      @unknowns += 1 if pull_request.node.mergeable == 'UNKNOWN'
+      @logger.debug("Unknowns: #{@unknowns}")
       return false
     end
     true
@@ -148,12 +167,12 @@ module GitHub
 
   def self.pr_passed_tests?(pull_request)
     if pull_request.node.commits.nodes[0].commit.status.nil?
-      @@logger.debug("++ Accepting #{pull_request.node.head_ref.name} despite lack of commit status")
+      @logger.debug("++ Accepting #{pull_request.node.head_ref.name} despite lack of commit status")
       return true
     end
     if pull_request.node.commits.nodes[0].commit.status.state != 'SUCCESS'
-      @@logger.info("-- Rejecting #{pull_request.node.head_ref.name}: ")
-      @@logger.info("   commit #{pull_request.node.commits.nodes[0].commit.oid} test state is #{pull_request.node.commits.nodes[0].commit.status.state}")
+      @logger.info("-- Rejecting #{pull_request.node.head_ref.name}: ")
+      @logger.info("   commit #{pull_request.node.commits.nodes[0].commit.oid} test state is #{pull_request.node.commits.nodes[0].commit.status.state}")
       return false
     end
     true
@@ -161,7 +180,7 @@ module GitHub
 
   def self.pr_against_base?(pull_request, base)
     if pull_request.node.base_ref_name != base
-      @@logger.info("-- Rejecting #{pull_request.node.head_ref.name}: PR's base #{pull_request.node.base_ref_name} is not #{base}")
+      @logger.info("-- Rejecting #{pull_request.node.head_ref.name}: PR's base #{pull_request.node.base_ref_name} is not #{base}")
       return false
     end
     true
@@ -169,9 +188,9 @@ module GitHub
 
   def self.pr_has_rejected_labels?(pull_request, pr_labels, reject_labels)
     if !reject_labels.empty? && (pr_labels & reject_labels != [])
-      @@logger.info("-- Rejecting #{pull_request.node.head_ref.name}: has a rejected label")
-      @@logger.info("   PR Labels: #{pr_labels.join(', ')}")
-      @@logger.info("   Reject labels: #{reject_labels.join(', ')}")
+      @logger.info("-- Rejecting #{pull_request.node.head_ref.name}: has a rejected label")
+      @logger.info("   PR Labels: #{pr_labels.join(', ')}")
+      @logger.info("   Reject labels: #{reject_labels.join(', ')}")
       return true
     end
     false
@@ -179,9 +198,9 @@ module GitHub
 
   def self.pr_has_all_required_labels?(pull_request, pr_labels, require_labels)
     if !require_labels.empty? && ((pr_labels & require_labels).sort != require_labels.sort)
-      @@logger.info("-- Rejecting #{pull_request.node.head_ref.name}: lacks a required label")
-      @@logger.info("   PR Labels: #{pr_labels.join(', ')}")
-      @@logger.info("   Required labels: #{require_labels.join(', ')}")
+      @logger.info("-- Rejecting #{pull_request.node.head_ref.name}: lacks a required label")
+      @logger.info("   PR Labels: #{pr_labels.join(', ')}")
+      @logger.info("   Required labels: #{require_labels.join(', ')}")
       return false
     end
     true
@@ -189,15 +208,17 @@ module GitHub
 
   def self.pr_has_at_least_one_label?(pull_request, pr_labels, at_least_one_label)
     if !at_least_one_label.empty? && (pr_labels & at_least_one_label == [])
-      @@logger.info("-- Rejecting #{pull_request.node.head_ref.name}: lacks at least one label")
-      @@logger.info("   PR Labels: #{pr_labels.join(', ')}")
-      @@logger.info("   At least one label: #{at_least_one_label.join(', ')}")
+      @logger.info("-- Rejecting #{pull_request.node.head_ref.name}: lacks at least one label")
+      @logger.info("   PR Labels: #{pr_labels.join(', ')}")
+      @logger.info("   At least one label: #{at_least_one_label.join(', ')}")
       return false
     end
     true
   end
 
   def self.branches_matching_filter(opts)
+    @count = 0
+    @unknowns = 0
     result = GitHub::Client.query(GitHub::FirstQuery)
     good_prs = GitHub.pr_filter(
       result,
@@ -208,10 +229,17 @@ module GitHub
     )
     while result.data.repository.pull_requests.page_info.has_next_page?
       cursor = result.data.repository.pull_requests.page_info.end_cursor
-      @@logger.debug("Next Page: #{cursor}")
+      @logger.debug("Next Page: #{cursor}")
       result = GitHub::Client.query(GitHub::NextQuery, variables: { cursor: cursor })
-      good_prs += GitHub.pr_filter(result, base, reject_labels, require_labels, at_least_one_label)
+      good_prs += GitHub.pr_filter(
+        result,
+        opts[:base],
+        opts[:reject_labels],
+        opts[:require_labels],
+        opts[:at_least_one_label]
+      )
     end
+    @tries += 1
     good_prs
   end
 end
