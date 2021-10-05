@@ -278,6 +278,8 @@ loop do
   branches = GitHub.branches_matching_filter(opts).join(' ')
   GitHub.logger.info("Percent: #{GitHub.percent}; Tries: #{GitHub.tries}")
   break if (GitHub.tries >= opts[:max_retries]) || (GitHub.percent < opts[:unknown_threshold])
+
+  sleep(opts[:retry_delay])
 end
 raise 'Giving up after too many failures' if GitHub.tries >= opts[:max_retries]
 
