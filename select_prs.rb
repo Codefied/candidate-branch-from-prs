@@ -157,7 +157,7 @@ module GitHub
     @count += 1
     @logger.debug("Count: #{@count}")
     if pull_request.node.mergeable != 'MERGEABLE'
-      @logger.info("-- Rejecting #{pull_request.node.head_ref.name}: PR merge state is #{pull_request.node.mergeable}, not MERGEABLE.")
+      @logger.info("-- Rejecting: PR merge state is #{pull_request.node.mergeable}, not MERGEABLE.")
       @unknowns += 1 if pull_request.node.mergeable == 'UNKNOWN'
       @logger.debug("Unknowns: #{@unknowns}")
       return false
