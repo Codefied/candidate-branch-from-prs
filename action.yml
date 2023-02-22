@@ -18,41 +18,53 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
 
-name: 'Candidate branches from PRs'
+name: "Candidate branches from PRs"
 description: "Selects candidate branches from a repository's open PRs."
 inputs:
   base:
-    description: 'target branch of PRs to search for'
+    description: "target branch of PRs to search for"
     required: true
-    default: 'master'
+    default: "master"
   reject-labels:
-    description: 'A comma-separated list of PR labels to reject.'
+    description: "A comma-separated list of PR labels to reject."
     required: true
-    default: 'hold'
+    default: "hold"
   require-labels:
-    description: 'A comma-separated list of PR labels to require.'
+    description: "A comma-separated list of PR labels to require."
     required: true
-    default: 'ready'
+    default: "ready"
   at-least-one-label:
-    description: 'A comma-separated list of PR labels, at least one of which is required.'
+    description: "A comma-separated list of PR labels, at least one of which is required."
     required: true
-    default: ''
+    default: ""
+  retry-delay:
+    description: "How long to wait, in seconds, to retry"
+    required: false
+    default: 30
+  max-retries:
+    description: "How many times to retry before the job fails"
+    required: false
+    default: 10
   additional-args:
-    description: 'Additional args e.g. -d or -v; see README'
+    description: "Additional args e.g. -d or -v; see README"
     required: false
 outputs:
   branches:
-    description: 'A space-separated list of branches whose PR met the above criteria.'
+    description: "A space-separated list of branches whose PR met the above criteria."
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
+  using: "docker"
+  image: "Dockerfile"
   args:
-    - '-b'
+    - "-b"
     - ${{ inputs.base }}
-    - '-n'
+    - "-n"
     - ${{ inputs.reject-labels }}
-    - '-y'
+    - "-y"
     - ${{ inputs.require-labels }}
-    - '-1'
+    - "-1"
     - ${{ inputs.at-least-one-label }}
+    - "-r"
+    - ${{ inputs.retry-delay }}
+    - "-m"
+    - ${{ inputs.max-retries }}
     - ${{ inputs.additional-args }}
