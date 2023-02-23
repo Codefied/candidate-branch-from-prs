@@ -47,9 +47,9 @@ module GitHub
   OWNER, REPO = ENV['GITHUB_REPOSITORY'].split('/')
 
   PR_QUERY_TEMPLATE = <<~GRAPHQL
-    {
+    query($labels: [String!] %{cursor}) {
       repository(owner: "#{self::OWNER}", name: "#{self::REPO}") {
-        pullRequests(first: 100, %s states: OPEN, orderBy: {direction: ASC, field: UPDATED_AT}) {
+        pullRequests(first: 100, %{after} labels: $labels, states: OPEN, orderBy: {direction: ASC, field: UPDATED_AT}) {
           pageInfo {
             endCursor
             hasNextPage
@@ -122,8 +122,8 @@ module GitHub
     @logger
   end
 
-  FirstQuery = Client.parse(PR_QUERY_TEMPLATE % '')
-  NextQuery  = Client.parse("query($cursor: String!) #{PR_QUERY_TEMPLATE % 'after: $cursor,'}")
+  FirstQuery = Client.parse(PR_QUERY_TEMPLATE % { after: '', cursor: '' })
+  NextQuery = Client.parse(PR_QUERY_TEMPLATE % { after: 'after: $cursor,', cursor: ', $cursor: String!' })
 
   def self.pr_filter(graphql_result, base, reject_labels, require_labels, at_least_one_label)
     filtered_pr_refs = []
@@ -219,7 +219,8 @@ module GitHub
   def self.branches_matching_filter(opts)
     @count = 0
     @unknowns = 0
-    result = GitHub::Client.query(GitHub::FirstQuery)
+    labels = (opts[:require_labels] + opts[:at_least_one_label]).uniq
+    result = GitHub::Client.query(GitHub::FirstQuery, variables: { labels: labels })
     good_prs = GitHub.pr_filter(
       result,
       opts[:base],
@@ -230,7 +231,7 @@ module GitHub
     while result.data.repository.pull_requests.page_info.has_next_page?
       cursor = result.data.repository.pull_requests.page_info.end_cursor
       @logger.debug("Next Page: #{cursor}")
-      result = GitHub::Client.query(GitHub::NextQuery, variables: { cursor: cursor })
+      result = GitHub::Client.query(GitHub::NextQuery, variables: { labels: labels, cursor: cursor })
       good_prs += GitHub.pr_filter(
         result,
         opts[:base],
